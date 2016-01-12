@@ -23,41 +23,40 @@ module.exports = {
     })
       .save()
       .then(function(task) {
-        var result = [];
-        return List.findOne({title: req.body.listTitle}).exec()
+        return List
+          .findOne({title: req.body.listTitle})
+          .exec()
           .then(function(list) {
             return [task, list];
-          });
+         });
       })
       .then(function(result) {
-        // console.log('beggining :', result);
-       if(!result[1]) {
-         new List({title: req.body.listTitle})
-           .save()
-           .then(function(res) {
-            var id = result[0]._id;
-            res.tasks.push(id)
-            res.save()
-           })
-           .then(null, function(err) {
-            console.log(err.toJSON());
-             })
-         } else {
-           var id = result[0]._id;
-           result[1].tasks.push(id)
-           result[1].save()
-          }
+        if(!result[1]) {
+          return new List({title: req.body.listTitle})
+            .save()
+            .then(function(list) {
+              result[1] = list;
+              return result;
+            })
+            .then(null, function(err) {
+              console.log(err);
+            })
+        } else {
          return result;
-        })
-        .then(function(result) {
-          console.log(result);
-          result[0].lists.push(result[1]._id);
-          result[0].save();
-          res.json({taskIsSaved: true});
-        })
-        .then(null, function(err) {
-          console.log("err :", err);
-        });
+        }
+      })
+      .then(function(result) {
+        var taskId = result[0]._id;
+        result[1].tasks.push(taskId);
+        result[1].save();
+        return result;
+      })
+      .then(function(result) {
+        res.json(result);
+      })
+      .then(null, function(err) {
+        console.log(err);
+      })
     },
 
   delete: function(req, res, next){
